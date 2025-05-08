@@ -9,6 +9,7 @@ int main() {
   // initialize_maze();
   update_floodfill();
   floodfill_maze_print();
+
   // floodfill_generate_weights();
 
 //   while (1) {

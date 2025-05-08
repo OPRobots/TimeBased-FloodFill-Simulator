@@ -16,10 +16,18 @@
 #define MAZE_CELLS MAZE_ROWS *MAZE_COLUMNS
 #define MAZE_MAX_DISTANCE MAZE_CELLS - 1
 
+struct walls {
+  bool front;
+  bool left;
+  bool right;
+};
+
 int16_t maze_get_cells(void);
 int16_t maze_get_columns(void);
 int16_t maze_get_rows(void);
 bool wall_exists(uint8_t position, uint8_t wall_bit);
+struct walls get_walls(uint8_t position);
+void update_walls(struct walls walls);
 bool maze_is_visited(uint8_t position);
 void initialize_maze(void);
 
