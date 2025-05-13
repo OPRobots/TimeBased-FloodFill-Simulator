@@ -1,7 +1,7 @@
 # MicroMouse-FloodFill-Simulator
 En este código hemos implementado el algoritmo de floodfill para nuestro robot de micromouse bajo la premisa de **Encontrar el camino mas rápido** en lugar de **El mas corto.**
 
-![MicroMouse-FloodFill-Simulator](./images/Laberinto_ejemplo.jpg)
+![MicroMouse-FloodFill-Simulator](./images/laberinto_ejemplo.jpg)
 Aqui podemos ver un ejemplo sacado del
 [video de Veritasium](https://www.youtube.com/watch?v=ZMQbHMgK2rw&t=600s&ab_channel=Veritasium ).
 
@@ -20,10 +20,10 @@ Teniendo todo esto en cuenta hemos generado este codigo al cual le puedes pasar 
 
 Este formato lo puedes conseguir montando tu laberinto en [nuestro generador de laberintos](https://oprobots.github.io/utils/maze-wall-placer.html ).
 
-![MicroMouse-FloodFill-Simulator](./images/Generador_laberintos.png)
+![MicroMouse-FloodFill-Simulator](./images/generador_laberinto.png)
 
 Una vez introducido el laberinto que quieras testear con el algoritmo este codigo te arrojaría lo siguiente:
 
-![MicroMouse-FloodFill-Simulator](./images/Laberinto_ascii.jpg)
+![MicroMouse-FloodFill-Simulator](./images/laberinto_ascii.jpg)
 Este laberinto muestra los pesos de cada casilla basado en tiempo. Para analizar el recorrido mas corto deberas empezar desde la meta e ir avanzando eligiendo la casilla con menor valor hasta la meta.
 Y como podras comprobar. El algoritmo prefiere ir por el camino mas largo, ya que en las rectas el robot alcanza altas velocidades lo que supone una notoria reduccion de tiempo total.
