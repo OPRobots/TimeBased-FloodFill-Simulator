@@ -2,11 +2,14 @@
 En este código hemos implementado el algoritmo de floodfill para nuestro robot de micromouse bajo la premisa de **Encontrar el camino mas rápido** en lugar de **El mas corto.**
 
 ![MicroMouse-FloodFill-Simulator](./images/Laberinto_ejemplo.jpg)
-Aqui podemos ver un ejemplo sacado del video de Veritasium: https://www.youtube.com/watch?v=ZMQbHMgK2rw&t=600s&ab_channel=Veritasium Donde se ve un camino verde de 19.4m vs un camino azul mas corto de 13.9m. Sin embargo el camino verde tiene rectas mas largas y tan solo 45 giros, vs el camino azul que tiene 57 giros.
+Aqui podemos ver un ejemplo sacado del
+[video de Veritasium](https://www.youtube.com/watch?v=ZMQbHMgK2rw&t=600s&ab_channel=Veritasium ).
+
+Donde se ve un camino verde de 19.4m vs un camino azul mas corto de 13.9m. Sin embargo el camino verde tiene rectas mas largas y tan solo 45 giros, vs el camino azul que tiene 57 giros.
 
 
-Para implementar este nuevo algoritmo nos hemos basado en este video:
-https://www.youtube.com/watch?v=jIdBi7FrioE
+Para implementar este nuevo algoritmo nos hemos basado en [este video](https://www.youtube.com/watch?v=jIdBi7FrioE ).
+
 Donde explica como implementar el floodfill mediante pesos calculados en funcion del tiempo teorico que tu robot de micromouse tardaria en llegar a la meta.
 
 Para ello lo principal es calcular cuanto tarda tu robot en atravesar una casilla en funcion de su velocidad base, su aceleración, y su velocidad máxima. Y lo mismo para las casillas con diagonales. Asignandole una penalización por girar calculada teniendo en cuenta en cuanto tarda el robot en frenar a la velocidad base para realizar ese giro.
