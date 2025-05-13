@@ -41,16 +41,6 @@ static void reset_floodfill_and_queue(void) {
   cells_queue.tail = 0;
 }
 
-static void queue_push2(uint8_t position, enum compass_direction direction, enum compass_direction step, uint8_t count) {
-  struct queue_cell queue = {
-      .cell = position,
-      .direction = direction,
-      .last_step = step,
-      .count = count,
-  };
-  cells_queue.queue[cells_queue.head++] = queue;
-}
-
 static void queue_push(uint8_t position, enum compass_direction direction, enum compass_direction step, uint8_t count) {
   struct queue_cell queue = {
       .cell = position,
@@ -79,7 +69,7 @@ static void add_target(uint8_t x, uint8_t y) {
   target_cells.stack[target_cells.size++] = (x - 1) + (y - 1) * (uint16_t)maze_get_columns();
 }
 
-static float get_next_floodfill_distance(float distance, enum compass_direction from_direction, enum compass_direction to_direction, uint8_t count) {
+static float get_next_floodfill_distance(float distance, enum compass_direction from_direction, enum compass_direction to_direction, uint8_t count, uint8_t last_count) {
   // Floodfill estandar
   // return distance + 1.0f;
 
@@ -134,7 +124,7 @@ static float get_next_floodfill_distance(float distance, enum compass_direction 
     if (count < straight_weights_count) {
       next_distance += (float)(straight_weights[count].time);
     } else {
-      next_distance += (float)diagonal_weights[straight_weights_count - 1].time;
+      next_distance += (float)straight_weights[straight_weights_count - 1].time;
     }
   } else if (from_diagonal && to_diagonal) {
     if (from_direction == to_direction) {
@@ -144,39 +134,41 @@ static float get_next_floodfill_distance(float distance, enum compass_direction 
         next_distance += (float)diagonal_weights[diagonal_weights_count - 1].time;
       }
     } else {
-      if (count < diagonal_weights_count) {
-        next_distance += (float)diagonal_weights[count].penalty;
+      next_distance += (float)diagonal_weights[0].time;
+      if (last_count < diagonal_weights_count) {
+        next_distance += (float)diagonal_weights[last_count].penalty;
       } else {
         next_distance += (float)diagonal_weights[diagonal_weights_count - 1].penalty;
       }
-      next_distance += (float)diagonal_weights[0].time;
     }
   } else if (from_orthogonal && to_diagonal) {
-    if (count < straight_weights_count) {
-      next_distance += (float)straight_weights[count].penalty;
+    next_distance += (float)diagonal_weights[0].time;
+    if (last_count < straight_weights_count) {
+      next_distance += (float)straight_weights[last_count].penalty;
     } else {
       next_distance += (float)straight_weights[straight_weights_count - 1].penalty;
     }
-    next_distance += (float)diagonal_weights[0].time;
   } else if (from_diagonal && to_orthogonal) {
-    if (count < diagonal_weights_count) {
-      next_distance += (float)diagonal_weights[count].penalty;
+    next_distance += (float)straight_weights[0].time;
+    if (last_count < diagonal_weights_count) {
+      next_distance += (float)diagonal_weights[last_count].penalty;
     } else {
       next_distance += (float)diagonal_weights[diagonal_weights_count - 1].penalty;
     }
-    next_distance += (float)straight_weights[0].time;
   }
   return distance + next_distance;
 }
 
 static uint8_t get_next_floodfill_count(enum compass_direction from_direction, enum compass_direction to_direction, uint8_t count) {
-  if (from_direction == to_direction || from_direction == TARGET) {
+  if (from_direction == to_direction) {
     return count + 1;
   } else {
     return 0;
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch"
 static enum compass_direction get_next_floodfill_direction(enum compass_direction from_direction, enum compass_direction from_step, enum compass_direction to_step) {
   switch (from_direction) {
     case TARGET:
@@ -329,6 +321,7 @@ static enum compass_direction get_next_floodfill_direction(enum compass_directio
   }
   return to_step;
 }
+#pragma GCC diagnostic pop
 
 const char *direccion_a_string(enum compass_direction dir) {
   switch (dir) {
@@ -355,21 +348,21 @@ const char *direccion_a_string(enum compass_direction dir) {
   }
 }
 
-void update_floodfill() {
+void update_floodfill(bool step_by_step) {
   reset_floodfill_and_queue();
 
-  straight_weights_count = get_cells_to_max_speed(180.0f, 2400, 6000, 25000);
-  weight_floodfill_table(180.0f, 2400, 6000, 25000, straight_weights_count, straight_weights);
-  diagonal_weights_count = get_cells_to_max_speed(180.0f, 2400, 6000, 25000);
-  weight_floodfill_table(180.0f, 2400, 6000, 25000, diagonal_weights_count, diagonal_weights);
+  straight_weights_count = get_cells_to_max_speed(180.0f, 2600, 6000, 25000);
+  weight_floodfill_table(180.0f, 2600, 6000, 25000, straight_weights_count, straight_weights);
+  diagonal_weights_count = get_cells_to_max_speed(127.3f, 2600, 6000, 25000);
+  weight_floodfill_table(127.3f, 2600, 6000, 25000, diagonal_weights_count, diagonal_weights);
 
   target_cells.size = 0;
-  // target_cells.stack[target_cells.size++] = 119;
-  add_target(8, 8);
-  add_target(8, 9);
-  add_target(9, 8);
-  add_target(9, 9);
-  // add_target(1,1);
+  // add_target(8, 8);
+  // add_target(8, 9);
+  // add_target(9, 8);
+  // add_target(9, 9);
+  // add_target(5, 5);
+  add_target(1, 1);
 
   for (uint8_t i = 0; i < target_cells.size; i++) {
     floodfill[target_cells.stack[i]] = 0;
@@ -377,7 +370,6 @@ void update_floodfill() {
   }
 
   uint16_t cell_count = 0;
-  bool imprimir = false;
   while (cells_queue.head != cells_queue.tail) {
     cell_count++;
     // if (cell_count > 5) {
@@ -391,74 +383,79 @@ void update_floodfill() {
     enum compass_direction last_step = queue_cell.last_step;
     uint8_t count = queue_cell.count;
 
-    if (imprimir) {
+    if (step_by_step) {
       printf("Current cell: [%d,%d], Direction: %s, Last step: %s, Count: %d\n", (current_cell % 16) + 1, (current_cell / 16) + 1, direccion_a_string(direction), direccion_a_string(last_step), count);
     }
 
     float next_distance = 0;
     uint8_t next_cell = 0;
+    uint8_t next_count = 0;
     enum compass_direction next_direction = 0;
     if (!wall_exists(current_cell, EAST_BIT)) {
-      if (imprimir) {
+      if (step_by_step) {
         getchar();
       }
-      next_direction = get_next_floodfill_direction(direction, last_step, EAST);
       next_cell = current_cell + get_direction_value(EAST);
-      next_distance = get_next_floodfill_distance(floodfill[current_cell], direction, next_direction, count);
+      next_direction = get_next_floodfill_direction(direction, last_step, EAST);
+      next_count = get_next_floodfill_count(direction, next_direction, count);
+      next_distance = get_next_floodfill_distance(floodfill[current_cell], direction, next_direction, next_count, count);
       if (floodfill[next_cell] >= next_distance) {
-        if (imprimir) {
+        if (step_by_step) {
           printf("Next direction: %s, Next distance: %f\n", direccion_a_string(next_direction), next_distance);
         }
         floodfill[next_cell] = next_distance;
-        queue_push(next_cell, next_direction, EAST, get_next_floodfill_count(direction, next_direction, count));
+        queue_push(next_cell, next_direction, EAST, next_count);
       }
     }
     if (!wall_exists(current_cell, SOUTH_BIT)) {
-      if (imprimir) {
+      if (step_by_step) {
         getchar();
       }
-      next_direction = get_next_floodfill_direction(direction, last_step, SOUTH);
       next_cell = current_cell + get_direction_value(SOUTH);
-      next_distance = get_next_floodfill_distance(floodfill[current_cell], direction, next_direction, count);
+      next_direction = get_next_floodfill_direction(direction, last_step, SOUTH);
+      next_count = get_next_floodfill_count(direction, next_direction, count);
+      next_distance = get_next_floodfill_distance(floodfill[current_cell], direction, next_direction, next_count, count);
       if (floodfill[next_cell] >= next_distance) {
-        if (imprimir) {
+        if (step_by_step) {
           printf("Next direction: %s, Next distance: %f\n", direccion_a_string(next_direction), next_distance);
         }
         floodfill[next_cell] = next_distance;
-        queue_push(next_cell, next_direction, SOUTH, get_next_floodfill_count(direction, next_direction, count));
+        queue_push(next_cell, next_direction, SOUTH, next_count);
       }
     }
     if (!wall_exists(current_cell, WEST_BIT)) {
-      if (imprimir) {
+      if (step_by_step) {
         getchar();
       }
-      next_direction = get_next_floodfill_direction(direction, last_step, WEST);
       next_cell = current_cell + get_direction_value(WEST);
-      next_distance = get_next_floodfill_distance(floodfill[current_cell], direction, next_direction, count);
+      next_direction = get_next_floodfill_direction(direction, last_step, WEST);
+      next_count = get_next_floodfill_count(direction, next_direction, count);
+      next_distance = get_next_floodfill_distance(floodfill[current_cell], direction, next_direction, next_count, count);
       if (floodfill[next_cell] >= next_distance) {
-        if (imprimir) {
+        if (step_by_step) {
           printf("Next direction: %s, Next distance: %f\n", direccion_a_string(next_direction), next_distance);
         }
         floodfill[next_cell] = next_distance;
-        queue_push(next_cell, next_direction, WEST, get_next_floodfill_count(direction, next_direction, count));
+        queue_push(next_cell, next_direction, WEST, next_count);
       }
     }
     if (!wall_exists(current_cell, NORTH_BIT)) {
-      if (imprimir) {
+      if (step_by_step) {
         getchar();
       }
-      next_direction = get_next_floodfill_direction(direction, last_step, NORTH);
       next_cell = current_cell + get_direction_value(NORTH);
-      next_distance = get_next_floodfill_distance(floodfill[current_cell], direction, next_direction, count);
+      next_direction = get_next_floodfill_direction(direction, last_step, NORTH);
+      next_count = get_next_floodfill_count(direction, next_direction, count);
+      next_distance = get_next_floodfill_distance(floodfill[current_cell], direction, next_direction, next_count, count);
       if (floodfill[next_cell] >= next_distance) {
-        if (imprimir) {
+        if (step_by_step) {
           printf("Next direction: %s, Next distance: %f\n", direccion_a_string(next_direction), next_distance);
         }
         floodfill[next_cell] = next_distance;
-        queue_push(next_cell, next_direction, NORTH, get_next_floodfill_count(direction, next_direction, count));
+        queue_push(next_cell, next_direction, NORTH, next_count);
       }
     }
-    if (imprimir) {
+    if (step_by_step) {
       floodfill_maze_print();
     }
   }
@@ -466,18 +463,15 @@ void update_floodfill() {
 }
 
 void floodfill_maze_print(void) {
-  // initialize_directions_values();
-  // build_run_sequence();
-  // smooth_run_sequence(menu_run_get_speed());
   for (int16_t r = maze_get_cells() - maze_get_columns(); r >= 0; r = r - maze_get_columns()) {
     // Borde superior del laberinto
     if (r == maze_get_cells() - maze_get_columns()) {
       printf("o");
       for (uint16_t i = ((uint16_t)maze_get_cells()) - maze_get_columns(); i < maze_get_cells(); i++) {
         if (wall_exists((uint8_t)i, NORTH_BIT)) {
-          printf("-----o");
+          printf("-------o");
         } else {
-          printf("     o");
+          printf("       o");
         }
       }
     }
@@ -493,17 +487,17 @@ void floodfill_maze_print(void) {
       if (maze_is_visited((uint8_t)c)) {
         // printf(" V ");
         if (floodfill[c] != 255.0f) {
-          printf("%5.2f", floodfill[c]);
+          printf("%7.4f", floodfill[c] /*  - 0.5f */);
         } else {
-          printf("     ");
+          printf("       ");
         }
       } else {
         // printf("     ");
 
         if (floodfill[c] != 255.0f) {
-          printf("%5.2f", floodfill[c]);
+          printf("%7.4f", floodfill[c] /*  - 0.5f */);
         } else {
-          printf("     ");
+          printf("       ");
         }
       }
       //   if ((c + 1 % maze_get_columns()) == 0) {
@@ -520,61 +514,11 @@ void floodfill_maze_print(void) {
     printf("o");
     for (int16_t c = r; c < r + maze_get_columns(); c++) {
       if (wall_exists((uint8_t)c, SOUTH_BIT) /* || c / maze_get_columns() == 0 */) {
-        printf("-----o");
+        printf("-------o");
       } else {
-        printf("     o");
+        printf("       o");
       }
     }
   }
   printf("\n");
-
-  // for (int16_t r = maze_get_cells() - maze_get_columns(); r >= 0; r = r - maze_get_columns()) {
-  //   // Borde superior del laberinto
-  //   if (r == maze_get_cells() - maze_get_columns()) {
-  //     printf("o");
-  //     for (uint16_t i = maze_get_cells() - maze_get_columns(); i < maze_get_cells(); i++) {
-  //       if (wall_exists(i, NORTH_BIT)) {
-  //         printf("-----o");
-  //       } else {
-  //         printf("     o");
-  //       }
-  //     }
-  //   }
-  //   printf("\n");
-
-  //   // Paredes laterales del laberinto y VISITADO
-  //   for (int16_t c = r; c < r + maze_get_columns(); c++) {
-  //     if (wall_exists(c, WEST_BIT) /* || c % maze_get_columns() == 0 */) {
-  //       printf("|");
-  //     } else {
-  //       printf(" ");
-  //     }
-  //     if (maze_is_visited(c)) {
-  //       printf(" V ");
-  //       // printf("%3d", floodfill[c]);
-  //     } else {
-  //       printf("     ");
-  //       // printf("%3d", floodfill[c]);
-  //     }
-  //     //   if ((c + 1 % maze_get_columns()) == 0) {
-  //     //     printf("|");
-  //     //   }
-  //     if (wall_exists(c, EAST_BIT) && ((c + 1) % maze_get_columns()) == 0) {
-  //       printf("|");
-  //     }
-  //   }
-  //   // printf("|\n");
-  //   printf("\n");
-
-  //   // Paredes inferiores del laberinto
-  //   printf("o");
-  //   for (int16_t c = r; c < r + maze_get_columns(); c++) {
-  //     if (wall_exists(c, SOUTH_BIT) /* || c / maze_get_columns() == 0 */) {
-  //       printf("-----o");
-  //     } else {
-  //       printf("     o");
-  //     }
-  //   }
-  // }
-  // printf("\n");
 }

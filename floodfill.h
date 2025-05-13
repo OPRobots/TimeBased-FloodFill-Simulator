@@ -59,7 +59,7 @@ struct cells_stack {
   uint8_t size;
 };
 
-void update_floodfill(void);
+void update_floodfill(bool step_by_step);
 void floodfill_maze_print(void);
 
 #endif
