@@ -2,8 +2,8 @@
 En este código hemos implementado el algoritmo de FloodFill para nuestro robot de MicroMouse bajo la premisa de _encontrar el camino más rápido_ en lugar de _el camino más corto_ como hacíamos anteriormente.
 
 ![MicroMouse-FloodFill-Simulator](./images/laberinto_ejemplo.png)
-Aquí podemos ver un ejemplo sacado del
-[vídeo de Veritasium](https://www.youtube.com/watch?v=ZMQbHMgK2rw&t=600s&ab_channel=Veritasium ).
+Aquí podemos ver un ejemplo sacado del vídeo de Veritasium
+[The Fastest Maze-Solving Competition On Earth](https://www.youtube.com/watch?v=ZMQbHMgK2rw&t=600s&ab_channel=Veritasium ).
 
 Donde se ve un camino verde de 19.4m frente a un camino azul más corto de 13.9m. Sin embargo el camino verde tiene rectas más largas y tan solo 45 giros, mientras que el camino azul tiene 57 giros.
 
